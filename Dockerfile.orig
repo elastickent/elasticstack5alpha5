@@ -1,0 +1,55 @@
+FROM centos:latest
+MAINTAINER Kent Brake kent@elastic.co
+
+ENV JAVA_HOME /usr/bin/java
+ENV JAVACMD /usr/bin/java
+
+# Repos
+ADD repo/elasticsearch.repo /etc/yum.repos.d/
+ADD repo/logstash.repo /etc/yum.repos.d/
+ADD repo/kibana.repo /etc/yum.repos.d/
+ADD repo/filebeat.repo /etc/yum.repos.d/
+ADD https://bootstrap.pypa.io/get-pip.py /tmp/get-pip.py
+
+# Install Packages
+RUN rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+# RUN yum update -y
+RUN python /tmp/get-pip.py
+RUN pip install elasticsearch-curator
+RUN rpm -ivh https://osquery-packages.s3.amazonaws.com/centos7/noarch/osquery-s3-centos7-repo-1-0.0.noarch.rpm
+RUN yum install -y osquery
+RUN yum install -y pkgconfig initscripts elasticsearch kibana logstash wget java-1.8.0-openjdk hostname which
+RUN yum install -y filebeat
+RUN pip install supervisor
+RUN mkdir -p /usr/share/elasticsearch/logs
+RUN /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch x-pack
+RUN chown -R elasticsearch /usr/share/elasticsearch
+RUN /usr/share/kibana/bin/kibana-plugin install x-pack
+
+
+ADD conf/elasticsearch.yml /etc/elasticsearch/
+ADD conf/kibana.yml /etc/kibana/kibana.yml
+ADD conf/logstash.conf /etc/logstash/logstash.conf
+ADD conf/filebeat.yml /etc/filebeat/filebeat.yml
+ADD conf/osquery.conf /etc/osquery/osquery.conf
+ADD conf/supervisord.conf /etc/supervisord.conf
+
+# Expose volumes
+RUN mkdir /data && touch /data/x
+RUN mkdir -p /data/supervisord/log
+RUN chown -R elasticsearch:elasticsearch /data
+VOLUME ["/data"]
+EXPOSE 5601
+
+ENV PATH=$PATH:/usr/share/elasticsearch/bin
+ENV ES_HOME=/usr/share/elasticsearch CONF_DIR=/etc/elasticsearch DATA_DIR=/var/lib/elasticsearch LOG_DIR=/var/log/elasticsearch ES_HOSTS=127.0.0.1
+
+#CMD ["elasticsearch","-Des.default.path.home=${ES_HOME}","-Des.default.path.logs=${LOG_DIR}","-Des.default.path.data=${DATA_DIR}","-Des.default.path.conf=${CONF_DIR}","-Des.discovery.zen.ping.unicast.hosts=${ES_HOSTS}"]
+# docker run --rm --cap-add=IPC_LOCK --ulimit memlock=-1:-1 --ulimit nofile=65536:65536 -t -P --memory="4g" -e ES_JAVA_OPTS="-Xms2g -Xmx2g" -p 9200:9200 -p 5601:5601 kbrake/elasticstack5:centos
+CMD ["supervisord","-n","-c", "/etc/supervisord.conf", "-l", "/data/supervisord/log/supervisord.log"]
+
+# CMD ["/sbin/init"]
+# sudo docker run --privileged -d -v /sys/fs/cgroup:/sys/fs/cgroup:ro honey-elk
+
+# ln -s /etc/elasticsearch/ /usr/share/elasticsearch/config
+# cp /etc/elasticsearch/*.yml /usr/share/elasticsearch/config/

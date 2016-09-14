@@ -1,0 +1,6 @@
+[kibana-5.0.0-alpha]
+name=Kibana repository for 5.0.5-alpha packages
+baseurl=https://packages.elastic.co/kibana/5.0.0-alpha/centos
+gpgcheck=1
+gpgkey=https://packages.elastic.co/GPG-KEY-elasticsearch
+enabled=1

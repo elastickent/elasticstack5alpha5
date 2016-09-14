@@ -1,0 +1,8 @@
+path:
+  logs: /data/elk/log
+  data: /data/elk/data
+cluster.name: "docker-cluster"
+network.host: 0.0.0.0
+node.data: true
+node.master: true
+discovery.zen.minimum_master_nodes: 1
