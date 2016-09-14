@@ -19,8 +19,6 @@ RUN mkdir -p /usr/share/elasticsearch/logs
 
 
 ADD conf/elasticsearch.yml /usr/share/elasticsearch/config/
-ADD conf/logging.yml /usr/share/elasticsearch/config/
-ADD conf/supervisord.conf /etc/supervisord.conf
 
 # Expose volumes
 RUN mkdir /data && touch /data/x
